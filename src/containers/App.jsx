@@ -116,22 +116,18 @@ const App = () => {
   }, [classifier, model]);
 
   React.useEffect(() => {
-    setWebcamInput(createWebcamInput(webcamSide));
-
+    setWebcamInput(createWebcamInput());
     return () => {
       setWebcamInput(null);
     };
   }, [webcamSide]);
 
-  const createWebcamInput = useCallback(
-    async (webcamSide) => {
-      const webcam = await tf.data.webcam(webcamRef.current, {
-        facingMode: webcamSide,
-      });
-      return webcam;
-    },
-    [webcamRef.current, webcamSide],
-  );
+  const createWebcamInput = useCallback(async () => {
+    const webcam = await tf.data.webcam(webcamRef.current, {
+      facingMode: webcamSide,
+    });
+    return webcam;
+  }, [webcamRef.current, webcamSide]);
 
   const addDatasetClass = useCallback(
     async (classId) => {
@@ -149,15 +145,19 @@ const App = () => {
     const inputWebcam = await webcamInput;
     while (true) {
       if (classifier.getNumClasses() > 0) {
-        const img = await inputWebcam.capture();
-        const activation = model.infer(img, 'conv_preds');
-        const result = await classifier.predictClass(activation);
-        resultRef.innerText = `
-          Prediction: ${result.label}
-          Probability: ${result.confidences[result.label] * 100}%
-          
-        `;
-        img.dispose();
+        try {
+          const img = await inputWebcam.capture();
+          const activation = model.infer(img, 'conv_preds');
+          const result = await classifier.predictClass(activation);
+          resultRef.innerText = `
+            Prediction: ${result.label}
+            Probability: ${result.confidences[result.label] * 100}%
+            
+          `;
+          img.dispose();
+        } catch (err) {
+          console.error(err, 'ERROR');
+        }
       }
       await tf.nextFrame();
     }
