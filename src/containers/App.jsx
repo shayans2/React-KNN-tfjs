@@ -181,15 +181,15 @@ const App = () => {
   }, [webcamInput, model, classifier]);
 
   const downloadModel = useCallback(async (classifierModel) => {
-    let datasets = await classifierModel.getClassifierDataset();
-    let datasetObject = {};
+    const datasets = await classifierModel.getClassifierDataset();
+    const datasetObject = {};
     Object.keys(datasets).forEach((key) => {
-      let data = datasets[key].dataSync();
+      const data = datasets[key].dataSync();
       datasetObject[key] = Array.from(data);
     });
-    let jsonModel = JSON.stringify(datasetObject);
+    const jsonModel = JSON.stringify(datasetObject);
 
-    let downloader = document.createElement('a');
+    const downloader = document.createElement('a');
     downloader.download = 'model.json';
     downloader.href =
       'data:text/text;charset=utf-8,' + encodeURIComponent(jsonModel);
