@@ -5,7 +5,7 @@ import * as tf from '@tensorflow/tfjs';
 import * as mobilenet from '@tensorflow-models/mobilenet';
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
 
-import { CameraChangeIcon } from '@components/CameraChange';
+import { CameraFlipIcon } from '@components/Icons/CameraFlip';
 
 const WebcamContainer = styled.video`
   height: 100%;
@@ -13,27 +13,35 @@ const WebcamContainer = styled.video`
   object-fit: cover;
 `;
 
-const WebcamSideBtn = styled.button`
+const HeaderBtnContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: row-reverse;
+  position: absolute;
+  top: 20px;
+  right: 16px;
+  left: 16px;
+  z-index: 1000;
+`;
+
+const HeaderBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  position: absolute;
 
   padding: 10px 15px;
   background-color: #121212;
+  color: #fff;
   border: none;
   border-radius: 18px;
-
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
 `;
 
 const Container = styled.div`
   position: fixed;
   top: auto;
   background: rgba(0, 0, 0, 0.5);
-  color: white;
+  color: #fff;
   text-align: center;
   right: 0;
   bottom: 0;
@@ -85,9 +93,18 @@ const App = () => {
   // TAG INPUT
   const [tag, setTag] = React.useState('');
 
-  const [resultRef, setResultRef] = React.useState(null);
+  // Refs
+  // Upload Input
+  const [hiddenInputRef, setHiddenInputRef] = React.useState(null);
 
-  const checkResultRef = (ref) => {
+  const checkHiddenInputRef = (ref) => {
+    if (ref) setHiddenInputRef(ref);
+    else setHiddenInputRef(null);
+  };
+
+  // Results
+  const [resultRef, setResultRef] = React.useState(null);
+  const checkResultsRef = (ref) => {
     if (ref) setResultRef(ref);
     else setResultRef(null);
   };
@@ -163,6 +180,45 @@ const App = () => {
     }
   }, [webcamInput, model, classifier]);
 
+  const downloadModel = useCallback(async (classifierModel) => {
+    let datasets = await classifierModel.getClassifierDataset();
+    let datasetObject = {};
+    Object.keys(datasets).forEach((key) => {
+      let data = datasets[key].dataSync();
+      datasetObject[key] = Array.from(data);
+    });
+    let jsonModel = JSON.stringify(datasetObject);
+
+    let downloader = document.createElement('a');
+    downloader.download = 'model.json';
+    downloader.href =
+      'data:text/text;charset=utf-8,' + encodeURIComponent(jsonModel);
+    document.body.appendChild(downloader);
+    downloader.click();
+    downloader.remove();
+  }, []);
+
+  const uploadModel = useCallback(async (classifierModel, event) => {
+    let inputModel = event.target.files;
+    let fileReader = new FileReader();
+    if (inputModel.length > 0) {
+      fileReader.onload = async () => {
+        const dataset = fileReader.result;
+        const tensorObj = JSON.parse(dataset);
+
+        Object.keys(tensorObj).forEach((key) => {
+          tensorObj[key] = tf.tensor(tensorObj[key], [
+            tensorObj[key].length / 1024,
+            1024,
+          ]);
+        });
+
+        classifierModel.setClassifierDataset(tensorObj);
+      };
+    }
+    await fileReader.readAsText(inputModel[0]);
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     addDatasetClass(tag);
@@ -179,19 +235,36 @@ const App = () => {
         width="800"
         height="800"
       />
-
-      <WebcamSideBtn
-        onClick={() =>
-          setWebcamSide((prevState) =>
-            prevState === 'user' ? 'environment' : 'user',
-          )
-        }
-      >
-        <CameraChangeIcon />
-      </WebcamSideBtn>
+      <HeaderBtnContainer>
+        <HeaderBtn
+          onClick={() =>
+            setWebcamSide((prevState) =>
+              prevState === 'user' ? 'environment' : 'user',
+            )
+          }
+        >
+          <CameraFlipIcon />
+        </HeaderBtn>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <HeaderBtn onClick={() => downloadModel(classifier)}>
+            Get Model
+          </HeaderBtn>
+          <HeaderBtn onClick={() => hiddenInputRef.click()}>
+            Upload Model
+          </HeaderBtn>
+          <input
+            ref={checkHiddenInputRef}
+            style={{ display: 'none' }}
+            name="file"
+            type="file"
+            onChange={(e) => uploadModel(classifier, e)}
+            accept="json"
+          />
+        </div>
+      </HeaderBtnContainer>
 
       <Container>
-        <div ref={checkResultRef}></div>
+        <div ref={checkResultsRef}></div>
 
         {isModelLoaded ? (
           <form onSubmit={handleSubmit}>

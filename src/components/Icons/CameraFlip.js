@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const CameraChangeIcon = () => {
+export const CameraFlipIcon = () => {
   return (
     <svg
       style={{
