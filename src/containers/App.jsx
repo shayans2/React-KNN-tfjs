@@ -280,7 +280,7 @@ const App = () => {
             </AddSampleBtn>
           </form>
         ) : (
-          'Loading model...'
+          'Loading mobilenet...'
         )}
       </Container>
     </>
