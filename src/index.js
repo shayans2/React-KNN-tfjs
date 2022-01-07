@@ -11,5 +11,3 @@ ReactDOM.render(
   </>,
   document.getElementById('app'),
 );
-
-module.hot.accept(); // Hot Module Replacement
