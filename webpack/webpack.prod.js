@@ -32,6 +32,19 @@ module.exports = {
       clientsClaim: true,
       skipWaiting: true,
       exclude: [/redirects/],
+      runtimeCaching: [
+        {
+          urlPattern: /\.(?:png|jpg|jpeg|svg|js)$/,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'assets',
+            expiration: {
+              maxEntries: 500,
+            },
+            cacheableResponse: { statuses: [0, 200] },
+          },
+        },
+      ],
     }),
     new CompressionPlugin({
       algorithm: 'gzip',
